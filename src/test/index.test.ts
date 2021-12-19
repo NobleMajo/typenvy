@@ -1,13 +1,18 @@
 import "mocha"
 import "chai"
 
-import { EnvError, Environment } from "../index"
+import {
+    EnvError,
+    EnvironmentParser,
+    emailRegex
+} from "../index"
 import { expect } from "chai"
+import { exec } from "child_process"
 
-describe('Test typenvy Environment class', () => {
+describe('Test typenvy EnvironmentParser class', () => {
 
-    it("basic environment test", async () => {
-        const env = new Environment({
+    it("basic EnvironmentParser test", async () => {
+        const env = new EnvironmentParser({
             loadProcessEnv: false,
         })
 
@@ -29,7 +34,14 @@ describe('Test typenvy Environment class', () => {
         env.define("number2value", "number")
         env.define("boolean2value", "boolean")
 
-        const env2 = env.parseEnv(defaultEnv, {})
+        const result = env.parseEnv(defaultEnv, {})
+        if (result.exe) {
+            result.exe()
+        }
+        const env2 = result.env
+
+        expect(typeof result).is.equals("object")
+        expect(typeof env2).is.equals("object")
 
         expect(typeof env2.testvalue).is.equals("string")
         expect(typeof env2.test2value).is.equals("string")
@@ -41,8 +53,8 @@ describe('Test typenvy Environment class', () => {
         expect(typeof env2.boolean2value).is.equals("boolean")
     })
 
-    it("error environment test", async () => {
-        const env = new Environment({
+    it("error EnvironmentParser test", async () => {
+        const env = new EnvironmentParser({
             loadProcessEnv: false,
         })
 
@@ -52,18 +64,19 @@ describe('Test typenvy Environment class', () => {
         env.define("testvalue", "string")
         env.require("somevalue", "string",)
 
-        const value = await createCatchPromise((async () => {
+        const result = await createCatchPromise((async () => {
             return env.parseEnv({}, defaultEnv)
         })())
 
-        expect(typeof value).is.equals("object")
-        expect(value instanceof Error).is.true
-        expect(EnvError.isEnvError(value)).is.true
-        expect(typeof value.message).is.equals("string")
+        expect(typeof result.exe).is.equals("function")
+        expect(typeof result.err).is.equals("object")
+        expect(result.err instanceof Error).is.true
+        expect(EnvError.isEnvError(result.err)).is.true
+        expect(typeof result.err.message).is.equals("string")
     })
 
-    it("json environment test", async () => {
-        const env = new Environment({
+    it("json EnvironmentParser test", async () => {
+        const env = new EnvironmentParser({
             loadProcessEnv: false,
         })
 
@@ -80,7 +93,14 @@ describe('Test typenvy Environment class', () => {
         env.define("test4", "json")
         env.define("test5", "json", "null")
 
-        const env2 = env.parseEnv(defaultEnv)
+        const result = env.parseEnv(defaultEnv)
+        if (result.exe) {
+            result.exe()
+        }
+        const env2 = result.env
+
+        expect(typeof result).is.equals("object")
+        expect(typeof env2).is.equals("object")
 
         expect(typeof env2.test1).is.equals("object")
         expect(Array.isArray(env2.test1)).is.false
@@ -103,8 +123,8 @@ describe('Test typenvy Environment class', () => {
         expect(env2.test5 == null).is.true
     })
 
-    it("json environment test", async () => {
-        const env = new Environment({
+    it("json EnvironmentParser test", async () => {
+        const env = new EnvironmentParser({
             loadProcessEnv: false,
         })
 
@@ -119,7 +139,14 @@ describe('Test typenvy Environment class', () => {
         env.define("test3", "null", "number", "boolean", "json:object")
         env.define("test4", "boolean", "json:object", "number", "null")
 
-        const env2 = env.parseEnv(defaultEnv)
+        const result = env.parseEnv(defaultEnv)
+        if (result.exe) {
+            result.exe()
+        }
+        const env2 = result.env
+
+        expect(typeof result).is.equals("object")
+        expect(typeof env2).is.equals("object")
 
         expect(typeof env2.test1).is.equals("object")
         expect(Array.isArray(env2.test1)).is.false
@@ -132,6 +159,110 @@ describe('Test typenvy Environment class', () => {
         expect(env2.test3 == null).is.true
 
         expect(typeof env2.test4).is.equals("boolean")
+    })
+
+    const testPaths = {
+        pathu1: "/home/test/some/path",
+        pathu2: "\\home\\test\\some\\path",
+        pathu3: "./some/path",
+        pathd1: "C:\\User\\halsm\\Desktop\\test",
+        pathd2: "C:/User/halsm/Desktop/test",
+        pathd3: ".\\Desktop\\test",
+    }
+
+    it("unix path regex EnvironmentParser test", async () => {
+        const env = new EnvironmentParser({
+            loadProcessEnv: false,
+        })
+
+        env.define("pathu1", "path:notexist")
+        env.define("pathu2", "path:notexist")
+        env.define("pathu3", "path:notexist")
+        env.define("pathd1", "path:notexist")
+        env.define("pathd2", "path:notexist")
+        env.define("pathd3", "path:notexist")
+
+        const result = env.parseEnv(testPaths)
+        if (result.exe) {
+            result.exe()
+        }
+        const env2 = result.env
+
+        expect(typeof result).is.equals("object")
+        expect(typeof env2).is.equals("object")
+
+        expect(typeof env2.pathu1).is.equals("string")
+        expect(typeof env2.pathu2).is.equals("string")
+        expect(typeof env2.pathu3).is.equals("string")
+        expect(typeof env2.pathd1).is.equals("string")
+        expect(typeof env2.pathd2).is.equals("string")
+        expect(typeof env2.pathd3).is.equals("string")
+
+        expect(env2.pathu1).is.equals("/home/test/some/path")
+        expect(env2.pathu2).is.equals("/home/test/some/path")
+        expect(env2.pathu3).is.equals("/some/path")
+        expect(env2.pathd1).is.equals("C:/User/halsm/Desktop/test")
+        expect(env2.pathd2).is.equals("C:/User/halsm/Desktop/test")
+        expect(env2.pathd3).is.equals("/Desktop/test")
+
+    })
+
+    it("dos path regex EnvironmentParser test", async () => {
+        const env = new EnvironmentParser({
+            loadProcessEnv: false,
+        })
+
+        env.define("pathu1", "path")
+        env.define("pathu2", "path")
+        env.define("pathu3", "path")
+        env.define("pathd1", "path")
+        env.define("pathd2", "path")
+        env.define("pathd3", "path")
+
+        const result = env.parseEnv(testPaths)
+        if (result.exe) {
+            result.exe()
+        }
+        const env2 = result.env
+
+        expect(typeof result).is.equals("object")
+        expect(typeof env2).is.equals("object")
+
+        expect(typeof env2.pathu1).is.equals("string")
+        expect(typeof env2.pathu2).is.equals("string")
+        expect(typeof env2.pathu3).is.equals("string")
+        expect(typeof env2.pathd1).is.equals("string")
+        expect(typeof env2.pathd2).is.equals("string")
+        expect(typeof env2.pathd3).is.equals("string")
+
+        expect(env2.pathu1).is.equals("/home/test/some/path")
+        expect(env2.pathu2).is.equals("/home/test/some/path")
+        expect(env2.pathu3).is.equals("/some/path")
+        expect(env2.pathd1).is.equals("C:/User/halsm/Desktop/test")
+        expect(env2.pathd2).is.equals("C:/User/halsm/Desktop/test")
+        expect(env2.pathd3).is.equals("/Desktop/test")
+    })
+
+    it("email regex EnvironmentParser test", async () => {
+        const testEmails = {
+            email1: "halsmaulmajo@coreunit.net",
+            email2: "halsmaulmajo@gmail.com",
+            email3: "majo@coreunit.net",
+            email4: "example@example.com",
+            email5: "qwer@domain.org",
+        }
+
+        expect(emailRegex.test("test")).is.false
+        expect(emailRegex.test("w.qöä@p34t8324@ät83ä´4üt8qä@3ßt4")).is.false
+        expect(emailRegex.test("öp3a4@giuz3p.09tgu3ßäö54guäa3c")).is.false
+        expect(emailRegex.test("p-43t9783p.ö4@t73äpt7p")).is.false
+
+        expect(emailRegex.test(testEmails.email1)).is.true
+        expect(emailRegex.test(testEmails.email2)).is.true
+        expect(emailRegex.test(testEmails.email3)).is.true
+        expect(emailRegex.test(testEmails.email4)).is.true
+        expect(emailRegex.test(testEmails.email5)).is.true
+
     })
 })
 

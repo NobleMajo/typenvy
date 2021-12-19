@@ -1,10 +1,8 @@
-import { type } from "os"
 import { URL } from "url"
+import * as path from "path"
+import * as fs from "fs"
 
-export const windowsPathRegex: string = `^(?!.*[\\\/]\s+)(?!(?:.*\s|.*\.|\W+)$)(?:[a-zA-Z]:)?(?:(?:[^<>:"\|\?\*\n])+(?:\/\/|\/|\\\\|\\)?)+$`
-export const unixPathRegex: string = "\([^\0 !$`&*()+]\|\\\(\ |\!|\$|\`|\&|\*|\(|\)|\+\)\)\+"
-export const test: string = "^(/)?([^/\0]+(/)?)+$"
-export const emailRegex: string = `/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/`
+export const emailRegex: RegExp = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
 export type JsonTypeValue = string | number | boolean | null
 export type JsonType = JsonHolder | JsonTypeValue
@@ -17,24 +15,341 @@ export interface JsonObject {
 export class EnvError extends Error {
     public readonly type: string = "EnvError"
 
-    public readonly exe: () => void
     constructor(
         msg: string,
     ) {
         super(msg)
         this.exe = (): void => {
-            console.error("EnvError:\n" + msg)
+            console.error("Environment Error:\n" + this.message)
             process.exit(1)
         }
     }
+
+    public readonly exe: (exit?: boolean) => void
+
     static isEnvError(obj: any): boolean {
         return obj instanceof Error && (obj as EnvError).type == "EnvError"
     }
 }
 
+export const types: {
+    [key: string]: (value: any) => any | undefined
+} = {
+    "json:object": (value) => {
+        if (typeof value == "string") {
+            try {
+                const obj = JSON.parse(value)
+                if (
+                    obj != null &&
+                    !Array.isArray(obj)
+                ) {
+                    return obj as JsonObject
+                }
+            } catch (err) {
+            }
+        }
+        return undefined
+    },
+    "json:array": (value) => {
+        if (typeof value == "string") {
+            try {
+                const obj = JSON.parse(value)
+                if (Array.isArray(obj)) {
+                    return obj as JsonArray
+                }
+            } catch (err) {
+            }
+        }
+        return undefined
+    },
+    "json": (value) => {
+        if (typeof value == "string") {
+            try {
+                return JSON.parse(value)
+            } catch (err) {
+            }
+        }
+        return undefined
+    },
+    "array": (value) => {
+        if (Array.isArray(value)) {
+            return value as any[]
+        }
+        return undefined
+    },
+    "object": (value) => {
+        if (
+            !Array.isArray(value) ||
+            value != null
+        ) {
+            return value as object
+        }
+        return undefined
+    },
+    "null:value": (value) => {
+        if (
+            value == null ||
+            (
+                typeof value == "string" &&
+                value.toLowerCase() == "null"
+            )
+        ) {
+            return null
+        }
+    },
+    "boolean": (value) => {
+        if (typeof value == "boolean") {
+            return value
+        } else if (typeof value == "string") {
+            if (value.toLowerCase() == "true") {
+                return true
+            } else if (value.toLowerCase() == "false") {
+                return true
+            }
+        }
+        return undefined
+    },
+    "number": (value) => {
+        if (typeof value == "number") {
+            return value as number
+        }
+        const obj = Number(value)
+        if (!isNaN(obj)) {
+            return obj as number
+        }
+        return undefined
+    },
+    "email": (value) => {
+        if (
+            typeof value == "string" &&
+            value.match(emailRegex)
+        ) {
+            return value
+        }
+    },
+    "url:http": (value) => {
+        try {
+            const url = new URL(value)
+            if (
+                url.protocol != "http" &&
+                url.protocol != "https"
+            ) {
+                return undefined
+            }
+            const value2 = url.toString()
+            if (
+                typeof value2 == "string" &&
+                value2.length > 0
+            ) {
+                return value2
+            }
+        } catch (err) {
+        }
+        return undefined
+    },
+    "url": (value) => {
+        try {
+            const url = new URL(value)
+            const value2 = url.toString()
+            if (
+                typeof value2 == "string" &&
+                value2.length > 0
+            ) {
+                return value2
+            }
+        } catch (err) {
+        }
+        return undefined
+    },
+    "path": (value) => {
+        if (typeof value == "string") {
+            const otherSep = path.sep == "/" ? "\\" : "/"
+            const value2 = value
+                .split(otherSep)
+                .join(path.sep)
+                .split(path.sep + path.sep)
+                .join(path.sep)
+                .split(path.sep)
+
+            return (
+                value2.length > 0 &&
+                    value2[0].endsWith(":") ?
+                    "" :
+                    path.sep
+            ) + path.join(...value2)
+        }
+    },
+    "path:dir": (value) => {
+        if (typeof value == "string") {
+            const otherSep = path.sep == "/" ? "\\" : "/"
+            const value2 = value
+                .split(otherSep)
+                .join(path.sep)
+                .split(path.sep + path.sep)
+                .join(path.sep)
+                .split(path.sep)
+
+            const path2 = (
+                value2.length > 0 &&
+                    value2[0].endsWith(":") ?
+                    "" :
+                    path.sep
+            ) + path.join(...value2)
+            try {
+                const stat = fs.statSync(path2)
+                if (stat && stat.isDirectory()) {
+                    return path2
+                }
+            } catch (err: Error | any) {
+                if (
+                    typeof err.message == "string" &&
+                    err.message.includes("no such file or directory")
+                ) {
+                    return undefined
+                }
+                throw err
+            }
+        }
+    },
+    "path:file": (value) => {
+        if (typeof value == "string") {
+            const otherSep = path.sep == "/" ? "\\" : "/"
+            const value2 = value
+                .split(otherSep)
+                .join(path.sep)
+                .split(path.sep + path.sep)
+                .join(path.sep)
+                .split(path.sep)
+
+            const path2 = (
+                value2.length > 0 &&
+                    value2[0].endsWith(":") ?
+                    "" :
+                    path.sep
+            ) + path.join(...value2)
+
+            try {
+                const stat = fs.statSync(path2)
+                if (stat && stat.isFile()) {
+                    return path2
+                }
+            } catch (err: Error | any) {
+                if (
+                    typeof err.message == "string" &&
+                    err.message.includes("no such file or directory")
+                ) {
+                    return undefined
+                }
+                throw err
+            }
+        }
+    },
+    "path:exist": (value) => {
+        if (typeof value == "string") {
+            const otherSep = path.sep == "/" ? "\\" : "/"
+            const value2 = value
+                .split(otherSep)
+                .join(path.sep)
+                .split(path.sep + path.sep)
+                .join(path.sep)
+                .split(path.sep)
+
+            const path2 = (
+                value2.length > 0 &&
+                    value2[0].endsWith(":") ?
+                    "" :
+                    path.sep
+            ) + path.join(...value2)
+            try {
+                const stat = fs.statSync(path2)
+                if (
+                    stat &&
+                    (
+                        stat.isFile() ||
+                        stat.isDirectory()
+                    )
+                ) {
+                    return path2
+                }
+            } catch (err: Error | any) {
+                if (
+                    typeof err.message == "string" &&
+                    err.message.includes("no such file or directory")
+                ) {
+                    return undefined
+                }
+                throw err
+            }
+        }
+    },
+    "path:notexist": (value) => {
+        if (typeof value == "string") {
+            const otherSep = path.sep == "/" ? "\\" : "/"
+            const value2 = value
+                .split(otherSep)
+                .join(path.sep)
+                .split(path.sep + path.sep)
+                .join(path.sep)
+                .split(path.sep)
+
+            const path2 = (
+                value2.length > 0 &&
+                    value2[0].endsWith(":") ?
+                    "" :
+                    path.sep
+            ) + path.join(...value2)
+
+            try {
+                const stat = fs.statSync(path2)
+                if (
+                    !stat ||
+                    (
+                        !stat.isFile() &&
+                        !stat.isDirectory()
+                    )
+                ) {
+                    return path2
+                }
+            } catch (err: Error | any) {
+                if (
+                    typeof err.message == "string" &&
+                    err.message.includes("no such file or directory")
+                ) {
+                    return path2
+                }
+                throw err
+            }
+        }
+    },
+    "string": (value) => {
+        if (
+            typeof value == "string" &&
+            value.length > 0
+        ) {
+            return value as string
+        }
+        return undefined
+    },
+    "string:empty": (value) => {
+        if (typeof value == "string") {
+            return value as string
+        }
+        return undefined
+    },
+    "null": (value) => {
+        return null
+    },
+    "any": (value) => {
+        return value as any
+    },
+}
+
 export interface EnvrionmentOptions {
     loadProcessEnv?: boolean
+    saveProcessEnv?: boolean,
     addDefaultTypes?: boolean,
+    execErrors?: boolean,
+    readRequiredValues?: boolean,
     types?: {
         [key: string]: <T>(value: any) => T | undefined
     }
@@ -42,185 +357,25 @@ export interface EnvrionmentOptions {
 
 export interface EnvrionmentSettings extends EnvrionmentOptions {
     loadProcessEnv: boolean,
+    saveProcessEnv: boolean,
     addDefaultTypes: boolean,
+    execErrors: boolean,
+    readRequiredValues?: boolean,
     types: {
-        [key: string]: (value: any) => undefined | any
+        [key: string]: (value: any) => any | undefined
     }
 }
 
 export const defaultEnvrionmentSettings: EnvrionmentSettings = {
     loadProcessEnv: true,
+    saveProcessEnv: true,
     addDefaultTypes: true,
-    types: {
-        "json:object": (value) => {
-            if (typeof value == "string") {
-                try {
-                    const obj = JSON.parse(value)
-                    if (
-                        obj != null &&
-                        !Array.isArray(obj)
-                    ) {
-                        return obj as JsonObject
-                    }
-                } catch (err) {
-                }
-            }
-            return undefined
-        },
-        "json:array": (value) => {
-            if (typeof value == "string") {
-                try {
-                    const obj = JSON.parse(value)
-                    if (Array.isArray(obj)) {
-                        return obj as JsonArray
-                    }
-                } catch (err) {
-                }
-            }
-            return undefined
-        },
-        "json": (value) => {
-            if (typeof value == "string") {
-                try {
-                    return JSON.parse(value)
-                } catch (err) {
-                }
-            }
-            return undefined
-        },
-        "array": (value) => {
-            if (Array.isArray(value)) {
-                return value as any[]
-            }
-            return undefined
-        },
-        "object": (value) => {
-            if (
-                !Array.isArray(value) ||
-                value != null
-            ) {
-                return value as object
-            }
-            return undefined
-        },
-        "null:value": (value) => {
-            if (
-                value == null ||
-                (
-                    typeof value == "string" &&
-                    value.toLowerCase() == "null"
-                )
-            ) {
-                return null
-            }
-        },
-        "boolean": (value) => {
-            if (typeof value == "boolean") {
-                return value
-            } else if (typeof value == "string") {
-                if (value.toLowerCase() == "true") {
-                    return true
-                } else if (value.toLowerCase() == "false") {
-                    return true
-                }
-            }
-            return undefined
-        },
-        "number": (value) => {
-            if (typeof value == "number") {
-                return value as number
-            }
-            const obj = Number(value)
-            if (!isNaN(obj)) {
-                return obj as number
-            }
-            return undefined
-        },
-        "email": (value) => {
-            if (
-                typeof value == "string" &&
-                value.match(emailRegex)
-            ) {
-                return value
-            }
-        },
-        "url:http": (value) => {
-            try {
-                const url = new URL(value)
-                if (
-                    url.protocol != "http" &&
-                    url.protocol != "https"
-                ) {
-                    return undefined
-                }
-                const value2 = url.toString()
-                if (
-                    typeof value2 == "string" &&
-                    value2.length > 0
-                ) {
-                    return value2
-                }
-            } catch (err) {
-            }
-            return undefined
-        },
-        "url": (value) => {
-            try {
-                const url = new URL(value)
-                const value2 = url.toString()
-                if (
-                    typeof value2 == "string" &&
-                    value2.length > 0
-                ) {
-                    return value2
-                }
-            } catch (err) {
-            }
-            return undefined
-        },
-        "path:dos": (value) => {
-            if (
-                typeof value == "string" &&
-                value.match(windowsPathRegex)
-            ) {
-                return value
-            }
-        },
-        "path:unix": (value) => {
-            if (
-                typeof value == "string" &&
-                value.match(unixPathRegex)
-            ) {
-                return value
-            }
-        },
-        "path": (value) => {
-            if (
-                typeof value == "string" &&
-                (
-                    value.match(unixPathRegex) ||
-                    value.match(windowsPathRegex)
-                )
-            ) {
-                return value
-            }
-        },
-        "string": (value) => {
-            if (typeof value == "string") {
-                return value as string
-            }
-            return undefined
-        },
-        "null": (value) => {
-            return null
-        },
-        "any": (value) => {
-            return value as any
-        },
-    }
+    execErrors: true,
+    readRequiredValues: true,
+    types: {}
 }
 
-export class Environment {
+export class EnvironmentParser {
     public readonly settings: EnvrionmentSettings
     public readonly typeIds: string[]
     private definedKeyTypes: {
@@ -237,8 +392,8 @@ export class Environment {
         }
         if (this.settings.addDefaultTypes) {
             this.settings.types = {
-                ...options.types,
-                ...defaultEnvrionmentSettings.types
+                ...(options ?? {}).types ?? {},
+                ...types
             }
         } else {
             this.settings.types = { ...options.types }
@@ -258,18 +413,18 @@ export class Environment {
         this.typeIds.unshift(type)
     }
 
-    defineCustomRegexType(type: string, regex: string): void {
+    defineCustomRegexType(type: string, regex: RegExp): void {
         this.defineCustomType(
             type,
             (value) =>
                 typeof value == "string" &&
-                    value.match(regex) ?
+                    regex.test(value) ?
                     value :
                     undefined
         )
     }
 
-    checkValue(key: string, value: any, types: string[]): any {
+    checkValue(key: string, value: any, types: string[], defaultValue?: any): any {
         if (!types || types.length == 0) {
             throw new EnvError("No types defined for '" + key + "'!")
         }
@@ -294,6 +449,9 @@ export class Environment {
             value2 == undefined &&
             value2 != null
         ) {
+            if (defaultValue) {
+                return defaultValue
+            }
             let types2: string
             if (types.length == 1) {
                 types2 = "need to be type of '" + types[0] + "'!"
@@ -320,7 +478,8 @@ export class Environment {
             obj2[key] = this.checkValue(
                 key,
                 obj[key],
-                this.definedKeyTypes[key]
+                this.definedKeyTypes[key],
+                defaultValues ? defaultValues[key] : undefined
             )
         }
         if (defaultValues) {
@@ -329,10 +488,10 @@ export class Environment {
                     const types = this.definedKeyTypes[key]
                     let types2: string
                     if (types.length == 1) {
-                        types2 = "need to be type of '" + types[0] + "'!"
+                        types2 = "is required and need to be type of '" + types[0] + "'!"
                     } else {
                         let last = types.pop()
-                        types2 = "need to be one of this types:\n'" + types.join("', '") + "' or '" + last + "'!"
+                        types2 = "is required and need to be one of this types:\n'" + types.join("', '") + "' or '" + last + "'!"
                     }
                     throw new EnvError("The value of '" + key + "' " + types2)
                 }
@@ -362,38 +521,71 @@ export class Environment {
         delete this.definedKeyTypes[key]
     }
 
-    parseEnv<T>(
+    parseEnv<T extends { [key: string]: any }>(
         defaultEnv: T,
         ...envValueObjects: any[]
-    ): T {
-        if (this.settings.loadProcessEnv == true) {
-            defaultEnv = {
-                ...defaultEnv,
-                ...process.env
+    ): {
+        env?: T,
+        err?: Error | any,
+        exe?: () => void
+    } {
+        try {
+            if (this.settings.loadProcessEnv == true) {
+                defaultEnv = {
+                    ...defaultEnv,
+                    ...process.env
+                }
+            }
+
+            defaultEnv = this.checkObject(defaultEnv)
+
+            let result = defaultEnv
+
+            if (envValueObjects.length > 0) {
+                let envValueMerge = {}
+                envValueObjects.forEach((envValueObject: any) => {
+                    if (
+                        typeof envValueObject == "object" &&
+                        envValueObject != null &&
+                        !Array.isArray(envValueObject)
+                    ) {
+                        envValueMerge = {
+                            ...envValueMerge,
+                            ...envValueObject
+                        }
+                    }
+                })
+
+                result = this.checkObject(envValueMerge, defaultEnv)
+            }
+
+            if (this.settings.saveProcessEnv == true) {
+                defaultEnv = {
+                    ...defaultEnv,
+                    ...process.env
+                }
+            }
+
+            return {
+                env: result
+            }
+        } catch (err: EnvError | Error | any) {
+            if (
+                this.settings.execErrors &&
+                err.type == "EnvError"
+            ) {
+                return {
+                    err: err,
+                    exe: () => err.exe()
+                }
+            }
+            return {
+                err: err,
+                exe: () => {
+                    console.error("Unknown error!\n", err)
+                    process.exit(0)
+                }
             }
         }
-
-        defaultEnv = this.checkObject(defaultEnv)
-
-        let result = defaultEnv
-        if (envValueObjects.length > 0) {
-            let envValueMerge = {}
-            envValueObjects.forEach((envValueObject: any) => {
-                if (
-                    typeof envValueObject == "object" &&
-                    envValueObject != null &&
-                    !Array.isArray(envValueObject)
-                ) {
-                    envValueMerge = {
-                        ...envValueMerge,
-                        ...envValueObject
-                    }
-                }
-            })
-
-            result = this.checkObject(envValueMerge, defaultEnv)
-        }
-
-        return result
     }
 }
