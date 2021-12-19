@@ -1,6 +1,6 @@
 {
   "name": "typenvy",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A simple cmd parser framework for node js/ts cli apps.",
   "main": "dist/index.js",
   "scripts": {
