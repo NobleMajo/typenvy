@@ -68,7 +68,7 @@
   "include": [
     "src/**/*",
     "src/cmd/.ts"
-, "test"  ],
+, "src/test", "../majotools/src/JSON.ts", "test"  ],
   "exclude": [
     "dist",
     "node_modules"

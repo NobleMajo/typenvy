@@ -3,7 +3,6 @@
 ![uses npm](https://img.shields.io/npm/v/typenvy.svg?style=plastic&logo=npm&color=red)
 ![uses typescript](https://img.shields.io/badge/dynamic/json?style=plastic&color=blue&label=Typescript&prefix=v&query=devDependencies.typescript&url=https%3A%2F%2Fraw.githubusercontent.com%2FHalsMaulMajo%2Ftypenvy%2Fmain%2Fpackage.json)
 ![uses github](https://img.shields.io/badge/dynamic/json?style=plastic&color=darkviolet&label=GitHub&prefix=v&query=version&url=https%3A%2F%2Fraw.githubusercontent.com%2FHalsMaulMajo%2Ftypenvy%2Fmain%2Fpackage.json)
-![can't load images](https://img.shields.io/badge/dynamic/json?style=plastic&color=orange&label=UnixTime&query=unixtime&suffix=sec&url=http%3A%2F%2Fworldtimeapi.org%2Fapi%2Ftimezone%2FEtc%2FUTC)
 
 ![](https://img.shields.io/badge/dynamic/json?color=darkred&label=open%20issues&query=open_issues&suffix=x&url=https%3A%2F%2Fapi.github.com%2Frepos%2FHalsMaulMajo%2Ftypenvy)
 ![](https://img.shields.io/badge/dynamic/json?color=navy&label=forks&query=forks&suffix=x&url=https%3A%2F%2Fapi.github.com%2Frepos%2FHalsMaulMajo%2Ftypenvy)
