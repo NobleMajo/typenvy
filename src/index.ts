@@ -27,7 +27,7 @@ export interface EnvType {
 }
 
 export function allToString(value: any) {
-    return typeof value.toString == "function" ?
+    return value && typeof value.toString == "function" ?
         value.toString() :
         "" + value
 }
@@ -53,7 +53,7 @@ export class EnvResult<T> {
         return this
     }
 
-    err(): EnvResult<T> {
+    errPrint(): EnvResult<T> {
         if (this.errors.length > 0) {
             console.log("Environment Errors:")
             for (let index = 0; index < this.errors.length; index++) {
@@ -78,7 +78,7 @@ export class EnvResult<T> {
 
     errThrow(): EnvResult<T> {
         if (this.errors.length > 0) {
-            this.err()
+            this.errPrint()
             throw new Error("Error in environment variables")
         }
         return this
@@ -86,7 +86,7 @@ export class EnvResult<T> {
 
     errExit(exitCode: number = 1): EnvResult<T> | never {
         if (this.errors.length > 0) {
-            this.err()
+            this.errPrint()
             process.exit(exitCode)
         }
         return this
