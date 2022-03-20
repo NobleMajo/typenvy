@@ -6,15 +6,15 @@
   "scripts": {
     "compile": "tsc -p tsconfig.json",
     "tstest": "mocha -r ts-node/register 'src/test/**/*.test.ts'",
-    "test": "npm run compile; mocha 'dist/test/**/*.test.js'",
+    "test": "mocha 'dist/test/**/*.test.js'",
     "build": "npm run compile",
     "dev": "nodemon -w \"$(pwd)/src/**/*\" -x \"npm run build; npm run test\"",
     "tsdev": "nodemon --ext \"*.ts\" -w \"$(pwd)/src/**/*\" -x \"npm run tstest\"",
-    "start-watch": "nodemon -w \"$(pwd)/dist/**/*\" -x \"npm run start\"",
+    "test-watch": "nodemon -w \"$(pwd)/dist/**/*\" -x \"npm run test\"",
     "build-watch": "nodemon --ext \"*.ts\" -w \"$(pwd)/src/**/*\" -x \"npm run build\"",
     "win:dev": "nodemon -w \"./src/**/*\" -x \"npm run build & npm run test\"",
     "win:tsdev": "nodemon --ext \"*.ts\" -w \"./src/**/*\" -x \"npm run tstest\"",
-    "win:start-watch": "nodemon -w \"./dist/**/*\" -x \"npm run start\"",
+    "win:test-watch": "nodemon -w \"./dist/**/*\" -x \"npm run test\"",
     "win:build-watch": "nodemon --ext \"*.ts\" -w \"./src/**/*\" -x \"npm run build\""
   },
   "keywords": [
