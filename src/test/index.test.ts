@@ -119,7 +119,7 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(newEnv).is.eql(sourceEnv)
     })
 
-    it("envParser should errors if ise wrong process.env types", async () => {
+    it("envParser should errors if is wrong process.env types", async () => {
         const sourceEnv = {
             PRODUCTION: (process.env.NODE_ENV === "production") as boolean,
             VERBOSE: false as boolean,
