@@ -3,7 +3,10 @@ import * as path from "path"
 import * as fs from "fs"
 import * as os from "os"
 
-export const emailRegex: RegExp = /^(([^<>()\[\]\\.,:\s@"]+(\.[^<>()\[\]\\.,:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+export interface TypeChecker<T> {
+    check: (value: any) => T | undefined,
+    type: string,
+}
 
 export type JsonTypeValue = string | number | boolean | null
 export type JsonType = JsonHolder | JsonTypeValue
@@ -13,11 +16,6 @@ export interface JsonObject {
     [key: string]: JsonType
 }
 
-export interface TypeChecker<T> {
-    check: (value: any) => T | undefined,
-    type: string,
-}
-
 export interface VariablesTypes {
     [key: string]: [TypeChecker<any>, ...TypeChecker<any>[]]
 }
@@ -25,6 +23,8 @@ export interface VariablesTypes {
 export interface EnvType {
     [key: string]: any
 }
+
+export const emailRegex: RegExp = /^(([^<>()\[\]\\.,:\s@"]+(\.[^<>()\[\]\\.,:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
 export function allToString(value: any) {
     return value && typeof value.toString == "function" ?
@@ -37,6 +37,15 @@ export class EnvResult<T> {
         public readonly env: T,
         public readonly errors: [string, Error][],
     ) {
+    }
+
+    setEnv(
+        env: { [key: string]: any }
+    ): EnvResult<T> {
+        Object.keys(this.env).forEach((key) => {
+            env[key] = allToString(this.env[key])
+        })
+        return this
     }
 
     setProcessEnv(): EnvResult<T> {

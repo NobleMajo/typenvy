@@ -47,14 +47,12 @@ export type BaseType = "boolean" | "number" | "string" |
     "symbol" | "object" | "bigint" | "function" |
     "unknown" | "array" | "null" | "undefined"
 
-
-
 export function fullTypeOf(value: any): BaseType {
     let type: BaseType = typeof value
     if (type == "object") {
         if (type == null) {
             type = "null"
-        } else if (Array.isArray(type)) {
+        } else if (Array.isArray(value)) {
             type = "array"
         }
     }
@@ -114,6 +112,9 @@ describe('Test typenvy EnvironmentParser class', () => {
             .parseEnv(sourceEnv, checker)
             .clearProcessEnv()
 
+        expect(fullTypeOf(res.errors)).is.equals("array")
+        expect(res.errors.length).is.equals(1)
+
         expect(fullTypeOf(res.errors[0])).is.equals("array")
         expect(res.errors[0].length).is.equals(2)
         expect(res.errors[0][1].message).is.equals(
@@ -129,6 +130,9 @@ describe('Test typenvy EnvironmentParser class', () => {
             .parseEnv(sourceEnv, checker)
             .clearProcessEnv()
 
+        expect(fullTypeOf(res.errors)).is.equals("array")
+        expect(res.errors.length).is.equals(1)
+
         expect(fullTypeOf(res.errors[0])).is.equals("array")
         expect(res.errors[0].length).is.equals(2)
         expect(res.errors[0][1].message).is.equals(
@@ -138,22 +142,27 @@ describe('Test typenvy EnvironmentParser class', () => {
     })
 
     it("check with wrong type object on number", async () => {
-        exampleChecker.HTTP_PORT = [typenvy.TC_OBJECT]
+        checker.HTTP_PORT = [typenvy.TC_OBJECT]
 
         const res = typenvy
             .parseEnv(sourceEnv, checker)
             .clearProcessEnv()
 
+        expect(fullTypeOf(res.errors)).is.equals("array")
+        expect(res.errors.length).is.equals(1)
+
         expect(fullTypeOf(res.errors[0])).is.equals("array")
         expect(res.errors[0].length).is.equals(2)
         expect(res.errors[0][1].message).is.equals(
-            "The environment variable 'HTTPS_PORT' is not type of 'NUMBER'"
+            "The environment variable 'HTTP_PORT' is not type of 'OBJECT'"
         )
         expect(res.errors[1]).is.equals(undefined)
     })
 
     it("envParser should errors if is wrong process.env types", async () => {
         sourceEnv.PRODUCTION = "test" as any
+
+        checker.STATIC_PATH = [typenvy.TC_EMAIL]
 
         process.env["VERBOSE"] = "123"
         process.env["HTTPS_PORT"] = "true"
