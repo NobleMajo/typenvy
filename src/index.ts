@@ -26,8 +26,9 @@ export interface EnvType {
 
 export const emailRegex: RegExp = /^(([^<>()\[\]\\.,:\s@"]+(\.[^<>()\[\]\\.,:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
-export function allToString(value: any) {
-    return value && typeof value.toString == "function" ?
+export function toString2(value: any): string {
+    return value &&
+        typeof value.toString == "function" ?
         value.toString() :
         "" + value
 }
@@ -39,24 +40,43 @@ export class EnvResult<T> {
     ) {
     }
 
-    setEnv(
+    overwriteEnv(
         env: { [key: string]: any }
     ): EnvResult<T> {
-        Object.keys(this.env).forEach((key) => {
-            env[key] = allToString(this.env[key])
+        Object.keys(env).forEach((key) => {
+            this.env[key] = env[key]
+        })
+        return this
+    }
+
+    setMissingEnv(
+        env: { [key: string]: any }
+    ): EnvResult<T> {
+        Object.keys(env).forEach((key) => {
+            if (!this.env[key]) {
+                this.env[key] = env[key]
+            }
         })
         return this
     }
 
     setProcessEnv(): EnvResult<T> {
         Object.keys(this.env).forEach((key) => {
-            process.env[key] = allToString(this.env[key])
+            process.env[key] = toString2(this.env[key])
         })
         return this
     }
 
-    clearProcessEnv(): EnvResult<T> {
+    clearProcessEnv(
+        justEqualValues: boolean = true
+    ): EnvResult<T> {
         Object.keys(this.env).forEach((key) => {
+            if (
+                justEqualValues &&
+                this.env[key] != process.env[key]
+            ) {
+                return
+            }
             delete process.env[key]
         })
         return this
@@ -72,7 +92,7 @@ export class EnvResult<T> {
                     (
                         error[1].stack ??
                         error[1].message ??
-                        allToString(error[1])
+                        toString2(error[1])
                     )
                         .split("\n")
                         .filter((v) => v.length != 0 && v != " ")

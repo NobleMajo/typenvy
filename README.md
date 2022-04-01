@@ -28,6 +28,7 @@
       - [1. Set environment variables](#1-set-environment-variables)
       - [2. Allow undefined as value](#2-allow-undefined-as-value)
       - [3. Set a default value](#3-set-a-default-value)
+- [other functions](#other-functions)
 - [npm scripts](#npm-scripts)
   - [use](#use)
   - [base scripts](#base-scripts)
@@ -140,6 +141,36 @@ export const defaultEnv = {
     PORT: 8080 as number,
     API_KEY: "myDEfaultAPIkey" as string,
     API_URL: "https://api.cloudflare.com/v1/dns" as string,
+}
+```
+
+# other functions
+By using the `parseEnv()` function tou get a `EnvResult<T>`.
+Here are all function of the Environment Result:
+```ts
+export interface EnvResult<T> {
+  // Overwrite default values
+  overwriteEnv(
+    env: { [key: string]: any }
+  ): EnvResult<T>
+  // Set value if its missing in default values
+  setMissingEnv(
+    env: { [key: string]: any }
+  ): EnvResult<T>
+  // Put all env value as strings into process.env
+  setProcessEnv(): EnvResult<T>
+  // Clear all env values from process.env
+  clearProcessEnv(
+    justEqualValues: boolean = true
+  ): EnvResult<T>
+  // Print env errors to console
+  errPrint(): EnvResult<T> 
+  // Throw env errors
+  errThrow(): EnvResult<T>
+  // Exit on error
+  errExit(
+    exitCode: number = 1
+  ): EnvResult<T> | never
 }
 ```
 
