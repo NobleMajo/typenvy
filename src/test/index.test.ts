@@ -60,15 +60,10 @@ export function fullTypeOf(value: any): BaseType {
 }
 
 describe('Test typenvy EnvironmentParser class', () => {
-    let sourceEnv: typeof exampleSourceEnv
-    let checker: VariablesTypes
+    it("envParser should check types", () => {
+        let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
+        let checker: VariablesTypes = { ...exampleChecker }
 
-    beforeEach("Reset example values", () => {
-        sourceEnv = { ...exampleSourceEnv }
-        checker = { ...exampleChecker }
-    })
-
-    it("envParser should check types", async () => {
         const newEnv = typenvy
             .parseEnv(sourceEnv, checker)
             .errThrow()
@@ -83,7 +78,10 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(newEnv).is.eql(sourceEnv)
     })
 
-    it("envParser should use process.env vars", async () => {
+    it("envParser should use process.env vars", () => {
+        let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
+        let checker: VariablesTypes = { ...exampleChecker }
+
         process.env["VERBOSE"] = "true"
         process.env["HTTPS_PORT"] = "54321"
         process.env["BIND_ADDRESS"] = "127.0.0.1"
@@ -105,8 +103,11 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(newEnv).is.eql(sourceEnv)
     })
 
-    it("check with string value as boolean", async () => {
-        sourceEnv.VERBOSE = "hallo world" as any
+    it("check with string value as boolean", () => {
+        let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
+        let checker: VariablesTypes = { ...exampleChecker }
+
+        sourceEnv.PRODUCTION = "hallo world" as any
 
         const res = typenvy
             .parseEnv(sourceEnv, checker)
@@ -118,17 +119,19 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(fullTypeOf(res.errors[0])).is.equals("array")
         expect(res.errors[0].length).is.equals(2)
         expect(res.errors[0][1].message).is.equals(
-            "The environment variable 'VERBOSE' is not type of 'BOOLEAN'"
+            "The environment variable 'PRODUCTION' is not type of 'BOOLEAN'"
         )
         expect(res.errors[1]).is.equals(undefined)
     })
 
-    it("check with 'true' value as number", async () => {
+    it("check with 'true' value as number", () => {
+        let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
+        let checker: VariablesTypes = { ...exampleChecker }
+
         process.env["HTTPS_PORT"] = "true"
 
         const res = typenvy
             .parseEnv(sourceEnv, checker)
-            .clearProcessEnv()
 
         expect(fullTypeOf(res.errors)).is.equals("array")
         expect(res.errors.length).is.equals(1)
@@ -139,27 +142,35 @@ describe('Test typenvy EnvironmentParser class', () => {
             "The environment variable 'HTTPS_PORT' is not type of 'NUMBER'"
         )
         expect(res.errors[1]).is.equals(undefined)
+        delete process.env["HTTPS_PORT"]
     })
 
-    it("check with wrong type object on number", async () => {
+    it("check with wrong type object on number", () => {
+        let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
+        let checker: VariablesTypes = { ...exampleChecker }
+
         checker.HTTP_PORT = [typenvy.TC_OBJECT]
 
         const res = typenvy
             .parseEnv(sourceEnv, checker)
-            .clearProcessEnv()
 
         expect(fullTypeOf(res.errors)).is.equals("array")
-        expect(res.errors.length).is.equals(1)
+        expect(res.errors.length).is.equals(2)
+        console.log("test: ", res.errors)
 
         expect(fullTypeOf(res.errors[0])).is.equals("array")
-        expect(res.errors[0].length).is.equals(2)
+        expect(res.errors[0].length).is.equals(1)
+        console.log("test: ", res.errors[0])
         expect(res.errors[0][1].message).is.equals(
             "The environment variable 'HTTP_PORT' is not type of 'OBJECT'"
         )
         expect(res.errors[1]).is.equals(undefined)
     })
 
-    it("envParser should errors if is wrong process.env types", async () => {
+    it("envParser should errors if is wrong process.env types", () => {
+        let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
+        let checker: VariablesTypes = { ...exampleChecker }
+
         sourceEnv.PRODUCTION = "test" as any
 
         checker.STATIC_PATH = [typenvy.TC_EMAIL]
