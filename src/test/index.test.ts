@@ -1,5 +1,4 @@
 import "mocha"
-import "chai"
 import { expect } from "chai"
 
 import * as typenvy from "../index"

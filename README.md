@@ -12,13 +12,10 @@
 ![](https://img.shields.io/badge/dynamic/json?color=navy&label=forks&query=forks&suffix=x&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmajo418%2Ftypenvy)
 ![](https://img.shields.io/badge/dynamic/json?color=darkred&label=open%20issues&query=open_issues&suffix=x&url=https%3A%2F%2Fapi.github.com%2Frepos%2Fmajo418%2Ftypenvy)
 
-"typenvy" is a environment managment library 
-
 # table of contents 
 - [typenvy](#typenvy)
 - [table of contents](#table-of-contents)
-- [Features](#features)
-  - [General](#general)
+- [About](#about)
   - [Getting started](#getting-started)
     - [1. install typenvy](#1-install-typenvy)
     - [2. env file](#2-env-file)
@@ -35,13 +32,8 @@
   - [watch mode](#watch-mode)
 - [contribution](#contribution)
 
-# Features
-
-## General
- - Set default (typed) environment varables
- - Define variables types
- - Defined required variables
- - Load and parse variables from process.env
+# About 
+"typenvy" is a environment managment library 
 
 ## Getting started
 ### 1. install typenvy
