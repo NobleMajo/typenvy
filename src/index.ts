@@ -141,9 +141,6 @@ export function parseEnv<T extends EnvType>(
     const varNames = Object.keys(types)
     for (let index = 0; index < varNames.length; index++) {
         const varName = varNames[index]
-        console.log(
-            " ### test: ", varName, env[varName], process.env[varName],
-        )
         const value = parseValue(
             process.env[varName] ?? env[varName] ?? undefined,
             types[varName]

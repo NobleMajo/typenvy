@@ -153,17 +153,28 @@ describe('Test typenvy EnvironmentParser class', () => {
         const res = typenvy
             .parseEnv(sourceEnv, checker)
 
-        expect(fullTypeOf(res.errors)).is.equals("array")
-        expect(res.errors.length).is.equals(2)
-        console.log("test: ", res.errors)
-
-        expect(fullTypeOf(res.errors[0])).is.equals("array")
-        expect(res.errors[0].length).is.equals(1)
-        console.log("test: ", res.errors[0])
-        expect(res.errors[0][1].message).is.equals(
+        expect(
+            fullTypeOf(res.errors),
+            "Check error array is an array"
+        ).is.equals("array")
+        expect(
+            res.errors.length,
+            "Check error count"
+        ).is.equals(1)
+        expect(
+            fullTypeOf(res.errors[0]),
+            "Check if error is a tuple array"
+        ).is.equals("array")
+        expect(
+            res.errors[0].length,
+            "Check error tuple size"
+        ).is.equals(2)
+        expect(res.errors[0][1].message,
+            "Check error message"
+        ).is.equals(
             "The environment variable 'HTTP_PORT' is not type of 'OBJECT'"
         )
-        expect(res.errors[1]).is.equals(undefined)
+        expect(res.errors[1], "Check if 2. error is undefined").is.equals(undefined)
     })
 
     it("envParser should errors if is wrong process.env types", () => {
