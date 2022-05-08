@@ -43,7 +43,7 @@ export function cmdFlag<T extends EnvType>(
     flag: Flag,
     envKey: string,
     envTypes: VariablesTypes,
-    ignoreErrors: boolean,
+    ignoreErrors: boolean = false,
 ): Flag {
     return {
         ...flag,
