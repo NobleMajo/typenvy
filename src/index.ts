@@ -2,7 +2,6 @@ import { URL } from "url"
 import * as path from "path"
 import * as fs from "fs"
 import * as os from "os"
-import { pullImage } from '../../fleetform/src/docker/func';
 
 export interface TypeChecker<T> {
     check: (value: any) => T | undefined,
@@ -269,10 +268,10 @@ export const TC_JSON_VALUE: TypeChecker<null | boolean | number | string> = {
         }
         return undefined
     },
-    type: "JSON_VALUE"
+    type: "JSON VALUE"
 }
 
-export const TC_OBJECT: TypeChecker<{ [key: string]: any }> = {
+export const TC_JSON_OBJECT: TypeChecker<{ [key: string]: any }> = {
     check: (value) => {
         if (
             typeof value == "string" &&
@@ -292,10 +291,10 @@ export const TC_OBJECT: TypeChecker<{ [key: string]: any }> = {
         }
         return undefined
     },
-    type: "OBJECT"
+    type: "JSON OBJECT"
 }
 
-export const TC_ARRAY: TypeChecker<any[]> = {
+export const TC_JSON_ARRAY: TypeChecker<any[]> = {
     check: (value) => {
         if (
             typeof value == "string" &&
@@ -311,7 +310,31 @@ export const TC_ARRAY: TypeChecker<any[]> = {
         }
         return undefined
     },
-    type: "ARRAY"
+    type: "JSON ARRAY"
+}
+
+export const TC_CSV_ARRAY: TypeChecker<any[]> = {
+    check: (value) => {
+        if (
+            typeof value == "string" &&
+            value.length > 0
+        ) {
+            value = value.split(",").map((v) => {
+                while (v.startsWith(" ")) {
+                    v = v.substring(1)
+                }
+                while (v.endsWith(" ")) {
+                    v = v.slice(0, -1)
+                }
+                return v
+            })
+        }
+        if (Array.isArray(value)) {
+            return value
+        }
+        return undefined
+    },
+    type: "CSV ARRAY"
 }
 
 export const TC_NULL: TypeChecker<null> = {
@@ -379,7 +402,7 @@ export const TC_URL_HTTP: TypeChecker<string> = {
         }
         return undefined
     },
-    type: "URL_HTTP"
+    type: "HTTP URL(STRING)"
 }
 
 export const TC_URL: TypeChecker<string> = {
@@ -456,7 +479,7 @@ export const TC_PATH_DIR: TypeChecker<string> = {
         }
         return undefined
     },
-    type: "PATH_DIR"
+    type: "EXISTING DIR PATH"
 }
 
 export const TC_PATH_FILE: TypeChecker<string> = {
@@ -492,7 +515,7 @@ export const TC_PATH_FILE: TypeChecker<string> = {
         }
         return undefined
     },
-    type: "PATH_FILE"
+    type: "EXISTING FILE PATH"
 }
 
 export const TC_PATH_EXIST: TypeChecker<string> = {
@@ -534,7 +557,7 @@ export const TC_PATH_EXIST: TypeChecker<string> = {
         }
         return undefined
     },
-    type: "PATH_EXIST"
+    type: "EXISTING PATH"
 }
 
 export const TC_PATH_NOT_EXIST: TypeChecker<string> = {
@@ -576,7 +599,7 @@ export const TC_PATH_NOT_EXIST: TypeChecker<string> = {
         }
         return undefined
     },
-    type: "PATH_NOT_EXIST"
+    type: "NOT EXISTING PATH"
 }
 
 export const TC_STRING: TypeChecker<string> = {
@@ -601,7 +624,7 @@ export const TC_EMPTY_STRING: TypeChecker<string> = {
         }
         return undefined
     },
-    type: "EMPTY_STRING"
+    type: "EMPTY STRING"
 }
 
 export const TC_NUMBER: TypeChecker<number> = {
@@ -637,7 +660,7 @@ export const TC_PORT: TypeChecker<number> = {
         }
         return undefined
     },
-    type: "NUMBER"
+    type: "PORT"
 }
 
 const allowedCalculationChars = "/*+-1234567890()"
@@ -663,5 +686,5 @@ export const TC_CALCULATION: TypeChecker<number> = {
         }
         return undefined
     },
-    type: "NUMBER"
+    type: "MATH CALCULATION"
 }
