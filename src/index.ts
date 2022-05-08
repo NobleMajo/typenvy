@@ -70,14 +70,6 @@ export function cmdFlag<F extends Flag>(
 
             }
             if (
-                flag.multiValues &&
-                !Array.isArray(env[envKey])
-            ) {
-                env[envKey] = [
-                    env[envKey]
-                ]
-            }
-            if (
                 Array.isArray(env[envKey])
             ) {
                 env[envKey].push(value)
