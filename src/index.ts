@@ -32,7 +32,7 @@ export interface Flag {
     displayName?: string,
     required?: boolean,
     default?: string | number | boolean,
-    types: ("string" | "number" | "boolean")[]
+    types?: ("string" | "number" | "boolean")[]
     shorthand?: string,
     alias?: string[],
     exe?: (cmd: any, value: string) => Awaitable<void>,
@@ -49,7 +49,7 @@ export function cmdFlag<F extends Flag>(
         ...flag,
         async exe(cmd, value) {
             value = parseValue(
-                value,
+                value ?? "true",
                 envTypes[envKey]
             )
             if (value == undefined) {
@@ -65,6 +65,7 @@ export function cmdFlag<F extends Flag>(
                     )
                 }
             }
+            process.env[envKey] = value
             if (flag.exe) {
                 await flag.exe(cmd, value)
             }
