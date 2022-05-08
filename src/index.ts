@@ -32,19 +32,19 @@ export interface Flag {
     displayName?: string,
     required?: boolean,
     default?: string | number | boolean,
-    types?: ("string" | "number" | "boolean")[]
+    types: ("string" | "number" | "boolean")[]
     shorthand?: string,
     alias?: string[],
     exe?: (cmd: any, value: string) => Awaitable<void>,
     exePriority?: number,
     multiValues?: boolean,
 }
-export function cmdFlag<T extends EnvType>(
-    flag: Flag,
+export function cmdFlag<F extends Flag>(
+    flag: F,
     envKey: string,
     envTypes: VariablesTypes,
     ignoreErrors: boolean = false,
-): Flag {
+): F {
     return {
         ...flag,
         async exe(cmd, value) {
