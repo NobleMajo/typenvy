@@ -2,6 +2,7 @@ import { URL } from "url"
 import * as path from "path"
 import * as fs from "fs"
 import * as os from "os"
+import { pullImage } from '../../fleetform/src/docker/func';
 
 export interface TypeChecker<T> {
     check: (value: any) => T | undefined,
@@ -66,8 +67,39 @@ export function cmdFlag<F extends Flag>(
                     )
                 }
             }
-            env[envKey] = value
-            process.env[envKey] = "" + value
+            if (cmd.multiValues) {
+
+            }
+            if (
+                flag.multiValues &&
+                !Array.isArray(env[envKey])
+            ) {
+                env[envKey] = [
+                    env[envKey]
+                ]
+            }
+            if (
+                Array.isArray(env[envKey])
+            ) {
+                env[envKey].push(value)
+                if (
+                    !process.env[envKey] ||
+                    process.env[envKey].length == 0
+                ) {
+                    process.env[envKey] = value
+                } else {
+                    process.env[envKey] = ", " + value
+                }
+            } else if (flag.multiValues) {
+                throw new Error(
+                    "The flag '" +
+                    flag.name +
+                    "' is a multiValues but env value is not an array!"
+                )
+            } else {
+                env[envKey] = value
+                process.env[envKey] = "" + value
+            }
             if (flag.exe) {
                 await flag.exe(cmd, value)
             }
