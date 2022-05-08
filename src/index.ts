@@ -66,13 +66,17 @@ export function cmdFlag<F extends Flag>(
                     )
                 }
             }
-            if (cmd.multiValues) {
-
-            }
             if (
                 Array.isArray(env[envKey])
             ) {
-                env[envKey].push(value)
+                if (Array.isArray(value)) {
+                    env[envKey] = [
+                        ...env[envKey],
+                        ...value,
+                    ]
+                } else {
+                    env[envKey].push(value)
+                }
                 if (
                     !process.env[envKey] ||
                     process.env[envKey].length == 0
