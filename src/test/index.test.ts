@@ -31,9 +31,9 @@ export const exampleSourceEnv = {
 export const exampleChecker: VariablesTypes = {
     PRODUCTION: [typenvy.TC_BOOLEAN],
     VERBOSE: [typenvy.TC_BOOLEAN],
-    DNS_SERVER_ADDRESSES: [typenvy.TC_ARRAY],
-    HTTP_PORT: [typenvy.TC_NUMBER],
-    HTTPS_PORT: [typenvy.TC_NUMBER],
+    DNS_SERVER_ADDRESSES: [typenvy.TC_JSON_ARRAY, typenvy.TC_CSV_ARRAY],
+    HTTP_PORT: [typenvy.TC_PORT],
+    HTTPS_PORT: [typenvy.TC_PORT],
     BIND_ADDRESS: [typenvy.TC_STRING],
     CERT_PATH: [typenvy.TC_PATH],
     KEY_PATH: [typenvy.TC_PATH],
@@ -123,7 +123,7 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(res.errors[1]).is.equals(undefined)
     })
 
-    it("check with 'true' value as number", () => {
+    it("check with 'true' value as port", () => {
         let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
         let checker: VariablesTypes = { ...exampleChecker }
 
@@ -138,7 +138,28 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(fullTypeOf(res.errors[0])).is.equals("array")
         expect(res.errors[0].length).is.equals(2)
         expect(res.errors[0][1].message).is.equals(
-            "The environment variable 'HTTPS_PORT' is not type of 'NUMBER'"
+            "The environment variable 'HTTPS_PORT' is not type of 'PORT'"
+        )
+        expect(res.errors[1]).is.equals(undefined)
+        delete process.env["HTTPS_PORT"]
+    })
+
+    it("check with 65536  value as port", () => {
+        let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
+        let checker: VariablesTypes = { ...exampleChecker }
+
+        process.env["HTTPS_PORT"] = "65536"
+
+        const res = typenvy
+            .parseEnv(sourceEnv, checker)
+
+        expect(fullTypeOf(res.errors)).is.equals("array")
+        expect(res.errors.length).is.equals(1)
+
+        expect(fullTypeOf(res.errors[0])).is.equals("array")
+        expect(res.errors[0].length).is.equals(2)
+        expect(res.errors[0][1].message).is.equals(
+            "The environment variable 'HTTPS_PORT' is not type of 'PORT'"
         )
         expect(res.errors[1]).is.equals(undefined)
         delete process.env["HTTPS_PORT"]
@@ -148,7 +169,7 @@ describe('Test typenvy EnvironmentParser class', () => {
         let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
         let checker: VariablesTypes = { ...exampleChecker }
 
-        checker.HTTP_PORT = [typenvy.TC_OBJECT]
+        checker.HTTP_PORT = [typenvy.TC_JSON_OBJECT]
 
         const res = typenvy
             .parseEnv(sourceEnv, checker)
@@ -172,7 +193,7 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(res.errors[0][1].message,
             "Check error message"
         ).is.equals(
-            "The environment variable 'HTTP_PORT' is not type of 'OBJECT'"
+            "The environment variable 'HTTP_PORT' is not type of 'JSON OBJECT'"
         )
         expect(res.errors[1], "Check if 2. error is undefined").is.equals(undefined)
     })
