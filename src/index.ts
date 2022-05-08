@@ -39,7 +39,7 @@ export interface Flag {
     exePriority?: number,
     multiValues?: boolean,
 }
-export function overwrite<T extends EnvType>(
+export function cmdFlag<T extends EnvType>(
     flag: Flag,
     envKey: string,
     envTypes: VariablesTypes,
