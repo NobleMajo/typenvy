@@ -43,6 +43,7 @@ export function cmdFlag<F extends Flag>(
     flag: F,
     envKey: string,
     envTypes: VariablesTypes,
+    env: any,
     ignoreErrors: boolean = false,
 ): F {
     return {
@@ -65,7 +66,8 @@ export function cmdFlag<F extends Flag>(
                     )
                 }
             }
-            process.env[envKey] = value
+            env[envKey] = value
+            process.env[envKey] = "" + value
             if (flag.exe) {
                 await flag.exe(cmd, value)
             }
