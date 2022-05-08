@@ -585,3 +585,29 @@ export const TC_EMPTY_STRING: TypeChecker<string> = {
     },
     type: "EMPTY_STRING"
 }
+
+const allowedCalculationChars = "/*+-1234567890()"
+export const TC_CALCULATION: TypeChecker<number> = {
+    check: (value) => {
+        if (typeof value == "number") {
+            return value as number
+        }
+        const obj = Number(value)
+        if (!isNaN(obj)) {
+            return obj as number
+        }
+        if (typeof value == "string") {
+            for (const char of value) {
+                if (!allowedCalculationChars.includes(char)) {
+                    return undefined
+                }
+            }
+            const obj = Number(eval(value))
+            if (!isNaN(obj)) {
+                return obj as number
+            }
+        }
+        return undefined
+    },
+    type: "NUMBER"
+}
