@@ -24,11 +24,58 @@ export interface EnvType {
     [key: string]: any
 }
 
+export type Awaitable<T> = Promise<T> | PromiseLike<T> | T
+
+export interface Flag {
+    name: string,
+    description: string,
+    displayName?: string,
+    required?: boolean,
+    default?: string | number | boolean,
+    types?: ("string" | "number" | "boolean")[]
+    shorthand?: string,
+    alias?: string[],
+    exe?: (cmd: any, value: string) => Awaitable<void>,
+    exePriority?: number,
+    multiValues?: boolean,
+}
+export function overwrite<T extends EnvType>(
+    flag: Flag,
+    envKey: string,
+    envTypes: VariablesTypes,
+    ignoreErrors: boolean,
+): Flag {
+    return {
+        ...flag,
+        async exe(cmd, value) {
+            value = parseValue(
+                value,
+                envTypes[envKey]
+            )
+            if (value == undefined) {
+                if (!ignoreErrors) {
+                    throw new Error(
+                        "The flag '" +
+                        flag.name +
+                        "' is not type of '" +
+                        envTypes[envKey].map(
+                            (c) => c.type
+                        ).join("', '") +
+                        "'"
+                    )
+                }
+            }
+            if (flag.exe) {
+                await flag.exe(cmd, value)
+            }
+        }
+    }
+}
+
 export const emailRegex: RegExp = /^(([^<>()\[\]\\.,:\s@"]+(\.[^<>()\[\]\\.,:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
-export function toString2(value: any): string {
-    return value &&
-        typeof value.toString == "function" ?
+export function anyToString(value: any): string {
+    return value && typeof value.toString == "function" ?
         value.toString() :
         "" + value
 }
@@ -62,7 +109,7 @@ export class EnvResult<T> {
 
     setProcessEnv(): EnvResult<T> {
         Object.keys(this.env).forEach((key) => {
-            process.env[key] = toString2(this.env[key])
+            process.env[key] = anyToString(this.env[key])
         })
         return this
     }
@@ -92,7 +139,7 @@ export class EnvResult<T> {
                     (
                         error[1].stack ??
                         error[1].message ??
-                        toString2(error[1])
+                        anyToString(error[1])
                     )
                         .split("\n")
                         .filter((v) => v.length != 0 && v != " ")
@@ -122,7 +169,13 @@ export class EnvResult<T> {
     }
 }
 
-export function parseValue<T>(value: T, checker: [TypeChecker<any>, ...TypeChecker<any>[]]): T | undefined {
+export function parseValue<T>(
+    value: T,
+    checker: [
+        TypeChecker<any>,
+        ...TypeChecker<any>[]
+    ]
+): T | undefined {
     for (let index = 0; index < checker.length; index++) {
         const newValue = checker[index].check(value)
         if (newValue != undefined) {
