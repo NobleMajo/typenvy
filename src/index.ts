@@ -313,20 +313,6 @@ export const TC_BOOLEAN: TypeChecker<boolean> = {
     type: "BOOLEAN"
 }
 
-export const TC_NUMBER: TypeChecker<number> = {
-    check: (value) => {
-        if (typeof value == "number") {
-            return value as number
-        }
-        const obj = Number(value)
-        if (!isNaN(obj)) {
-            return obj as number
-        }
-        return undefined
-    },
-    type: "NUMBER"
-}
-
 export const TC_EMAIL: TypeChecker<string> = {
     check: (value) => {
         if (
@@ -586,15 +572,51 @@ export const TC_EMPTY_STRING: TypeChecker<string> = {
     type: "EMPTY_STRING"
 }
 
+export const TC_NUMBER: TypeChecker<number> = {
+    check: (value) => {
+        if (typeof value == "number") {
+            return value as number
+        }
+        value = Number(value)
+        if (!isNaN(value)) {
+            return value as number
+        }
+        return undefined
+    },
+    type: "NUMBER"
+}
+
+
+export const TC_PORT: TypeChecker<number> = {
+    check: (value) => {
+        if (
+            typeof value == "number" &&
+            value >= 0 && value <= 65535
+        ) {
+
+            return value as number
+        }
+        value = Number(value)
+        if (
+            !isNaN(value) &&
+            value >= 0 && value <= 65535
+        ) {
+            return value as number
+        }
+        return undefined
+    },
+    type: "NUMBER"
+}
+
 const allowedCalculationChars = "/*+-1234567890()"
 export const TC_CALCULATION: TypeChecker<number> = {
     check: (value) => {
         if (typeof value == "number") {
             return value as number
         }
-        const obj = Number(value)
-        if (!isNaN(obj)) {
-            return obj as number
+        let newValue = Number(value)
+        if (!isNaN(newValue)) {
+            return newValue as number
         }
         if (typeof value == "string") {
             for (const char of value) {
@@ -602,9 +624,9 @@ export const TC_CALCULATION: TypeChecker<number> = {
                     return undefined
                 }
             }
-            const obj = Number(eval(value))
-            if (!isNaN(obj)) {
-                return obj as number
+            const newValue = Number(eval(value))
+            if (!isNaN(newValue)) {
+                return newValue as number
             }
         }
         return undefined
