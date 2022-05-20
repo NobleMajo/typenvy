@@ -17,14 +17,6 @@
 - [table of contents](#table-of-contents)
 - [About](#about)
   - [Getting started](#getting-started)
-    - [1. install typenvy](#1-install-typenvy)
-    - [2. env file](#2-env-file)
-    - [3. env parser](#3-env-parser)
-    - [4. load and print env in "./src/index.ts"](#4-load-and-print-env-in-srcindexts)
-    - [5. start](#5-start)
-      - [1. Set environment variables](#1-set-environment-variables)
-      - [2. Allow undefined as value](#2-allow-undefined-as-value)
-      - [3. Set a default value](#3-set-a-default-value)
 - [other functions](#other-functions)
 - [npm scripts](#npm-scripts)
   - [use](#use)
@@ -33,7 +25,7 @@
 - [contribution](#contribution)
 
 # About 
-"typenvy" is a environment managment library 
+`typenvy` is a environment managment library.
 
 ## Getting started
 ### 1. install typenvy
@@ -42,10 +34,10 @@ npm i typenvy
 ```
 
 ### 2. env file
-Create a example environment file at "./src/env/env.ts":
+Create a example environment file at `./src/env/env.ts`:
 ```ts
 import * as typenvy from "typenvy"
-export const defaultEnv = {
+export const envDefaults = {
     PRODUCTION: (process.env.NODE_ENV === "production") as boolean,
     VERBOSE: false as boolean,
 
@@ -53,7 +45,7 @@ export const defaultEnv = {
     API_KEY: undefined as string,
     API_URL: undefined as string,
 }
-export const variablesTypes: typenvy.VariablesTypes = {
+export const envTypes: typenvy.VariablesTypes = {
     PRODUCTION: [typenvy.TC_BOOLEAN],
     VERBOSE: [typenvy.TC_BOOLEAN],
 
@@ -64,55 +56,43 @@ export const variablesTypes: typenvy.VariablesTypes = {
 ``` 
 
 ### 3. env parser
-Create a example environment parser file at "./src/env/envParser.ts":
+Create a example environment parser file at `./src/env/envParser.ts`:
 ```ts
 import { parseEnv } from "typenvy"
-import { defaultEnv, variablesTypes } from "./env"
+import { envDefaults, envTypes } from "./env"
 
-export const env = parseEnv(defaultEnv, variablesTypes)
+export const env = parseEnv(
+  envDefaults,
+  envTypes
+)
   .setProcessEnv()
   .errExit()
   .env
 export default env
-
-if (!env.PRODUCTION) {
-    process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
-}
 ```
 
 ### 4. load and print env in "./src/index.ts"
 ```ts
 import env from "./env/envParser"
 
-console.log("parser env: ", {
-  prod: env.PRODUCTION,
-  v: env.VERBOSE,
-  port: env.PORT,
-  key: env.API_KEY,
-  url: env.API_URL,
-})
-
-console.log("process env: ", {
-  prod: process.env.PRODUCTION,
-  v: process.env.VERBOSE,
-  port: process.env.PORT,
-  key: process.env.API_KEY,
-  url: process.env.API_URL,
-})
+console.log("parser env: ", env)
+console.log("process env: ", process.env)
 ```
 
-### 5. start
-If you run the index.js after compile the app throws an error.
-This is because in the "env.ts" there is no default value provided for "API_KEY" and "API_URL".
+### 5. start and error
+If you run the `index.js` after compile the app throws an error.  
+This is because in the `env.ts` there is no default value provided for `API_KEY` and `API_URL`.
 
 There are 3 options to remove this error:
+
 #### 1. Set environment variables
+Define the variables in your shell:
 ```sh
 export API_KEY="qwertzui"
 export API_URL="https://api.github.io/v2/repo/majo418/testrepo"
 ```
 #### 2. Allow undefined as value
-Allow undefined as environment variable value in env.ts
+Allow undefined as environment variable value in `env.ts`:
 ```ts
 export const variablesTypes: typenvy.VariablesTypes = {
     PRODUCTION: [typenvy.TC_BOOLEAN],
@@ -124,7 +104,7 @@ export const variablesTypes: typenvy.VariablesTypes = {
 }
 ```
 #### 3. Set a default value
-Allow undefined as environment variable value in env.ts
+Allow default environment values in `envParser.ts`:
 ```ts
 export const defaultEnv = {
     PRODUCTION: (process.env.NODE_ENV === "production") as boolean,
