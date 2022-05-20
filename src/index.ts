@@ -31,7 +31,6 @@ export interface Flag {
     description: string,
     displayName?: string,
     required?: boolean,
-    default?: string | number | boolean,
     types?: ("string" | "number" | "boolean")[]
     shorthand?: string,
     alias?: string[],
@@ -43,11 +42,18 @@ export function cmdFlag<F extends Flag>(
     flag: F,
     envKey: string,
     envTypes: VariablesTypes,
+    envDefaults: any,
     env: any,
     ignoreErrors: boolean = false,
 ): F {
     return {
         ...flag,
+        description: flag.description +
+            "default: '" +
+            envDefaults[envKey] +
+            "'), ENV: '" +
+            envKey +
+            "')",
         async exe(cmd, value) {
             value = parseValue(
                 value ?? "true",
