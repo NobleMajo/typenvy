@@ -49,9 +49,9 @@ export function cmdFlag<F extends Flag>(
     return {
         ...flag,
         description: flag.description +
-            "default: '" +
+            " (default: '" +
             envDefaults[envKey] +
-            "'), ENV: '" +
+            "', ENV: '" +
             envKey +
             "')",
         async exe(cmd, value) {
