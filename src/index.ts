@@ -167,11 +167,11 @@ export class EnvResult<T> {
 
     errPrint(): EnvResult<T> {
         if (this.errors.length > 0) {
-            console.log("Environment Errors:")
+            console.error("Environment Errors:")
             for (let index = 0; index < this.errors.length; index++) {
                 const error = this.errors[index];
-                console.log("########## [ " + error[0] + " ]:")
-                console.log(
+                console.error("########## [ " + error[0] + " ]:")
+                console.error(
                     (
                         error[1].stack ??
                         error[1].message ??
