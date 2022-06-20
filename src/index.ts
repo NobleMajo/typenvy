@@ -2,6 +2,25 @@ import { URL } from "url"
 import * as path from "path"
 import * as fs from "fs"
 import * as os from "os"
+import { cmdyFlag as cmdyFlag2 } from './cmdy';
+
+export const cmdyFlag = cmdyFlag2
+
+export type BaseType = "boolean" | "number" | "string" |
+    "symbol" | "object" | "bigint" | "function" |
+    "unknown" | "array" | "null" | "undefined"
+
+export function fullTypeOf(value: any): BaseType {
+    let type: BaseType = typeof value
+    if (type == "object") {
+        if (type == null) {
+            type = "null"
+        } else if (Array.isArray(value)) {
+            type = "array"
+        }
+    }
+    return type
+}
 
 export interface TypeChecker<T> {
     check: (value: any) => T | undefined,
@@ -24,90 +43,6 @@ export interface EnvType {
     [key: string]: any
 }
 
-export type Awaitable<T> = Promise<T> | PromiseLike<T> | T
-
-export interface Flag {
-    name: string,
-    description: string,
-    displayName?: string,
-    required?: boolean,
-    types?: ("string" | "number" | "boolean")[]
-    shorthand?: string,
-    alias?: string[],
-    exe?: (cmd: any, value: string) => Awaitable<void>,
-    exePriority?: number,
-    multiValues?: boolean,
-}
-export function cmdFlag<F extends Flag>(
-    flag: F,
-    envKey: string,
-    envTypes: VariablesTypes,
-    envDefaults: any,
-    env: any,
-    ignoreErrors: boolean = false,
-): F {
-    return {
-        ...flag,
-        description: flag.description +
-            " (default: '" +
-            envDefaults[envKey] +
-            "', ENV: '" +
-            envKey +
-            "')",
-        async exe(cmd, value) {
-            value = parseValue(
-                value ?? "true",
-                envTypes[envKey]
-            )
-            if (value == undefined) {
-                if (!ignoreErrors) {
-                    throw new Error(
-                        "The flag '" +
-                        flag.name +
-                        "' is not type of '" +
-                        envTypes[envKey].map(
-                            (c) => c.type
-                        ).join("', '") +
-                        "'"
-                    )
-                }
-            }
-            if (
-                Array.isArray(env[envKey])
-            ) {
-                if (Array.isArray(value)) {
-                    env[envKey] = [
-                        ...env[envKey],
-                        ...value,
-                    ]
-                } else {
-                    env[envKey].push(value)
-                }
-                if (
-                    !process.env[envKey] ||
-                    process.env[envKey].length == 0
-                ) {
-                    process.env[envKey] = value
-                } else {
-                    process.env[envKey] = ", " + value
-                }
-            } else if (flag.multiValues) {
-                throw new Error(
-                    "The flag '" +
-                    flag.name +
-                    "' is a multiValues but env value is not an array!"
-                )
-            } else {
-                env[envKey] = value
-                process.env[envKey] = "" + value
-            }
-            if (flag.exe) {
-                await flag.exe(cmd, value)
-            }
-        }
-    }
-}
-
 export const emailRegex: RegExp = /^(([^<>()\[\]\\.,:\s@"]+(\.[^<>()\[\]\\.,:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 
 export function anyToString(value: any): string {
@@ -116,18 +51,52 @@ export function anyToString(value: any): string {
         "" + value
 }
 
-export class EnvResult<T> {
+export interface EnvData<T extends EnvType> {
+    defaultEnv: T,
+    types: VariablesTypes,
+    env: T,
+}
+
+export class EnvError extends Error {
     constructor(
+        msg: string,
+        public readonly sourceError?: Error
+    ) {
+        super(msg + ":\n" + sourceError.message)
+        if (sourceError.stack) {
+            if (this.stack) {
+                this.stack = sourceError.stack +
+                    "\nWrapped in Error:\n" +
+                    this.stack
+            } else {
+                this.stack = sourceError.stack
+            }
+        }
+    }
+}
+
+export class EnvResult<T extends EnvType> implements EnvData<T> {
+    public readonly envError: EnvError | undefined
+
+    constructor(
+        public readonly defaultEnv: T,
+        public readonly types: VariablesTypes,
         public readonly env: T,
         public readonly errors: [string, Error][],
     ) {
+        if (errors.length > 0) {
+            this.envError = new EnvError(
+                "Error for envrionment variable",
+                errors[0][1]
+            )
+        }
     }
 
     overwriteEnv(
         env: { [key: string]: any }
     ): EnvResult<T> {
         Object.keys(env).forEach((key) => {
-            this.env[key] = env[key]
+            (this.env as any)[key] = env[key]
         })
         return this
     }
@@ -137,7 +106,7 @@ export class EnvResult<T> {
     ): EnvResult<T> {
         Object.keys(env).forEach((key) => {
             if (!this.env[key]) {
-                this.env[key] = env[key]
+                (this.env as any)[key] = env[key]
             }
         })
         return this
@@ -189,9 +158,8 @@ export class EnvResult<T> {
     }
 
     errThrow(): EnvResult<T> {
-        if (this.errors.length > 0) {
-            this.errPrint()
-            throw new Error("Error in environment variables")
+        if (this.envError) {
+            throw this.envError
         }
         return this
     }
@@ -202,6 +170,14 @@ export class EnvResult<T> {
             process.exit(exitCode)
         }
         return this
+    }
+
+    getData(): EnvData<T> {
+        return {
+            defaultEnv: { ...this.defaultEnv },
+            types: { ...this.types },
+            env: { ...this.env },
+        }
     }
 }
 
@@ -230,7 +206,8 @@ export function parseEnv<T extends EnvType>(
     const varNames = Object.keys(types)
     for (let index = 0; index < varNames.length; index++) {
         const varName = varNames[index]
-        const value = parseValue(
+        let value = process.env[varName] ?? env[varName] ?? undefined
+        value = parseValue(
             process.env[varName] ?? env[varName] ?? undefined,
             types[varName]
         )
@@ -249,7 +226,12 @@ export function parseEnv<T extends EnvType>(
         }
         (env as any)[varName] = value
     }
-    return new EnvResult(env, errors)
+    return new EnvResult<T>(
+        defaultEnv,
+        types,
+        env,
+        errors
+    )
 }
 
 export const TC_JSON_VALUE: TypeChecker<null | boolean | number | string> = {

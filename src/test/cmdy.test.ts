@@ -1,11 +1,25 @@
 import "mocha"
 import { expect } from "chai"
 
-import { fullTypeOf } from "../index"
 import * as typenvy from "../index"
-import { VariablesTypes } from '../index';
-import { exampleChecker, exampleSourceEnv } from "./example";
-import { uniqueStringify } from './json';
+import { VariablesTypes } from '../index'
+import { exampleChecker, exampleSourceEnv } from "./example"
+
+export type BaseType = "boolean" | "number" | "string" |
+    "symbol" | "object" | "bigint" | "function" |
+    "unknown" | "array" | "null" | "undefined"
+
+export function fullTypeOf(value: any): BaseType {
+    let type: BaseType = typeof value
+    if (type == "object") {
+        if (type == null) {
+            type = "null"
+        } else if (Array.isArray(value)) {
+            type = "array"
+        }
+    }
+    return type
+}
 
 describe('Test typenvy EnvironmentParser class', () => {
     it("envParser should check types", () => {
@@ -23,11 +37,7 @@ describe('Test typenvy EnvironmentParser class', () => {
         sourceEnv["KEY_PATH"] = process.cwd() + "/certs/privkey.pem"
         sourceEnv["CA_PATH"] = process.cwd() + "/certs/chain.pem"
 
-        expect(uniqueStringify(
-            newEnv
-        )).is.equals(uniqueStringify(
-            sourceEnv
-        ))
+        expect(newEnv).is.eql(sourceEnv)
     })
 
     it("envParser should use process.env vars", () => {
@@ -52,11 +62,7 @@ describe('Test typenvy EnvironmentParser class', () => {
         sourceEnv["CERT_PATH"] = process.cwd() + "/certs/cert.pem"
         sourceEnv["KEY_PATH"] = process.cwd() + "/certs/privkey.pem"
         sourceEnv["CA_PATH"] = process.cwd() + "/certs/chain.pem"
-        expect(uniqueStringify(
-            newEnv
-        )).is.equals(uniqueStringify(
-            sourceEnv
-        ))
+        expect(newEnv).is.eql(sourceEnv)
     })
 
     it("check with string value as boolean", () => {
@@ -155,22 +161,22 @@ describe('Test typenvy EnvironmentParser class', () => {
         expect(res.errors[1], "Check if 2. error is undefined").is.equals(undefined)
     })
 
-    it("envParser should errors if is wrong process.env types", () => {
+    it("envParser should errors if has wrong types", () => {
         let sourceEnv: typeof exampleSourceEnv = { ...exampleSourceEnv }
         let checker: VariablesTypes = { ...exampleChecker }
 
-        sourceEnv.PRODUCTION = "test" as any
-
         checker.STATIC_PATH = [typenvy.TC_EMAIL]
 
-        process.env["VERBOSE"] = "123"
-        process.env["HTTPS_PORT"] = "true"
-        process.env["BIND_ADDRESS"] = ""
-        process.env["STATIC_PATH"] = "./public"
+        let sourceEnv2 = sourceEnv as any
+        sourceEnv2["PRODUCTION"] = "test"
+        sourceEnv2["HTTPS_PORT"] = "true"
+        sourceEnv2["BIND_ADDRESS"] = ""
+        sourceEnv2["STATIC_PATH"] = "./public"
 
-        const res = typenvy
-            .parseEnv(sourceEnv, checker)
-            .clearProcessEnv()
-        expect(res.errors.length).is.equals(5)
+        const res = typenvy.parseEnv(
+            sourceEnv2,
+            checker
+        )
+        expect(res.errors.length).is.equals(4)
     })
 })
