@@ -57,23 +57,7 @@ export interface EnvData<T extends EnvType> {
     env: T,
 }
 
-export class EnvError extends Error {
-    constructor(
-        msg: string,
-        public readonly sourceError?: Error
-    ) {
-        super(msg + ":\n" + sourceError.message)
-        if (sourceError.stack) {
-            if (this.stack) {
-                this.stack = sourceError.stack +
-                    "\nWrapped in Error:\n" +
-                    this.stack
-            } else {
-                this.stack = sourceError.stack
-            }
-        }
-    }
-}
+export class EnvError extends Error { }
 
 export class EnvResult<T extends EnvType> implements EnvData<T> {
     public readonly envError: EnvError | undefined
@@ -85,10 +69,7 @@ export class EnvResult<T extends EnvType> implements EnvData<T> {
         public readonly errors: [string, Error][],
     ) {
         if (errors.length > 0) {
-            this.envError = new EnvError(
-                "Error for envrionment variable",
-                errors[0][1]
-            )
+            this.envError = errors[0][1]
         }
     }
 
