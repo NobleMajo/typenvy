@@ -51,8 +51,8 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
     return {
         ...flag,
         description: des,
-        async exe(cmd, value) {
-            if (typeof flag.types == "string") {
+        async exe(cmd, value: any) {
+            if (typeof value == "string") {
                 if (!stringBooleanValues.includes(value.toLowerCase())) {
                     value = "" + envData.defaultEnv[envKey]
                     if (!stringBooleanValues.includes(value.toLowerCase())) {
@@ -70,6 +70,22 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
                 value,
                 envData.types[envKey]
             )
+            if (
+                !flag.types &&
+                value == undefined
+            ) {
+                value = envData.defaultEnv[envKey]
+                if (typeof value != "boolean") {
+                    value = flag.default
+                    if (typeof value != "boolean") {
+                        value = undefined
+                    } else {
+                        value = !value
+                    }
+                } else {
+                    value = !value
+                }
+            }
             if (value == undefined) {
                 if (!ignoreErrors) {
                     throw new Error(
@@ -94,14 +110,6 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
                 } else {
                     envData.env[envKey].push(value)
                 }
-                if (
-                    !process.env[envKey] ||
-                    process.env[envKey].length == 0
-                ) {
-                    process.env[envKey] = value
-                } else {
-                    process.env[envKey] = ", " + value
-                }
             } else if (flag.multiValues) {
                 throw new Error(
                     "The flag '" +
@@ -110,7 +118,6 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
                 )
             } else {
                 envData.env[envKey] = value
-                process.env[envKey] = "" + value
             }
             if (flag.exe) {
                 await flag.exe(cmd, value)

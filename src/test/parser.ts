@@ -171,6 +171,12 @@ describe('Test typenvy EnvironmentParser class', () => {
         const res = typenvy
             .parseEnv(sourceEnv, checker)
             .clearProcessEnv()
-        expect(res.errors.length).is.equals(5)
+        expect(
+            res.errors.length,
+            "Errors:\n - " +
+            res.errors.map(
+                (v) => v[1].stack
+            ).join("\n - ")
+        ).is.equals(5)
     })
 })

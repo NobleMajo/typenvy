@@ -2,7 +2,7 @@ import * as typenvy from "../index"
 import { VariablesTypes } from '../index';
 
 export const exampleSourceEnv = {
-    PRODUCTION: (process.env.NODE_ENV === "production") as boolean,
+    PRODUCTION: false as boolean,
     VERBOSE: true as boolean,
 
     DNS_SERVER_ADDRESSES: [
