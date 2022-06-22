@@ -52,18 +52,16 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
         ...flag,
         description: des,
         async exe(cmd, value) {
-            if (
-                flag.types == undefined
-            ) {
+            if (typeof flag.types == "string") {
                 if (!stringBooleanValues.includes(value.toLowerCase())) {
                     value = "" + envData.defaultEnv[envKey]
                     if (!stringBooleanValues.includes(value.toLowerCase())) {
-                        value = "" + (!Boolean(value))
+                        value = "" + (!Boolean(value.toLowerCase()))
                     }
                     if (!stringBooleanValues.includes(value.toLowerCase())) {
                         value = "" + flag.default
                         if (!stringBooleanValues.includes(value.toLowerCase())) {
-                            value = "" + (!Boolean(value))
+                            value = "" + (!Boolean(value.toLowerCase()))
                         }
                     }
                 }
