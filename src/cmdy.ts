@@ -7,6 +7,16 @@ export interface InputValidator {
     validate: (value: any) => Awaitable<any | undefined>;
 }
 export declare type FlagValueTypes = "string" | "number" | "boolean" | InputValidator;
+
+export function isTypeOf(value: any, types: string[]) {
+    for (const type of types) {
+        if (typeof value == type) {
+            return true
+        }
+    }
+    return false
+}
+
 export interface Flag {
     name: string;
     description: string;
@@ -70,20 +80,35 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
                 value,
                 envData.types[envKey]
             )
-            if (
-                !flag.types &&
-                value == undefined
-            ) {
-                value = envData.defaultEnv[envKey]
-                if (typeof value != "boolean") {
-                    value = flag.default
+            if (value == undefined) {
+                if (Array.isArray(flag.types)) {
+                    value = envData.defaultEnv[envKey]
+                    value = parseValue(
+                        value,
+                        envData.types[envKey]
+                    )
+                    if (!isTypeOf(value, flag.types as string[])) {
+                        value = flag.default
+                        value = parseValue(
+                            value,
+                            envData.types[envKey]
+                        )
+                        if (!isTypeOf(value, flag.types as string[])) {
+                            value = undefined
+                        }
+                    }
+                } else {
+                    value = envData.defaultEnv[envKey]
                     if (typeof value != "boolean") {
-                        value = undefined
+                        value = flag.default
+                        if (typeof value != "boolean") {
+                            value = undefined
+                        } else {
+                            value = !value
+                        }
                     } else {
                         value = !value
                     }
-                } else {
-                    value = !value
                 }
             }
             if (value == undefined) {
@@ -95,7 +120,7 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
                         envData.types[envKey].map(
                             (c) => c.type
                         ).join("', '") +
-                        "'"
+                        "'\nValue:\n" + JSON.stringify(value, null, 2)
                     )
                 }
             }

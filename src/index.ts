@@ -324,6 +324,18 @@ export const TC_NULL: TypeChecker<null> = {
     type: "NULL"
 }
 
+export const TC_UNDEFINED_AS_NULL: TypeChecker<null> = {
+    check: (value) => {
+        if (
+            value == undefined ||
+            TC_NULL.check(value) == null
+        ) {
+            return null
+        }
+    },
+    type: "NULL"
+}
+
 export const TC_BOOLEAN: TypeChecker<boolean> = {
     check: (value) => {
         if (typeof value == "boolean") {
