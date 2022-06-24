@@ -62,20 +62,6 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
         ...flag,
         description: des,
         async exe(cmd, value: any) {
-            if (typeof value == "string") {
-                if (!stringBooleanValues.includes(value.toLowerCase())) {
-                    value = "" + envData.defaultEnv[envKey]
-                    if (!stringBooleanValues.includes(value.toLowerCase())) {
-                        value = "" + (!Boolean(value.toLowerCase()))
-                    }
-                    if (!stringBooleanValues.includes(value.toLowerCase())) {
-                        value = "" + flag.default
-                        if (!stringBooleanValues.includes(value.toLowerCase())) {
-                            value = "" + (!Boolean(value.toLowerCase()))
-                        }
-                    }
-                }
-            }
             value = parseValue(
                 value,
                 envData.types[envKey]
@@ -99,8 +85,16 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
                     }
                 } else {
                     value = envData.defaultEnv[envKey]
+                    value = parseValue(
+                        value,
+                        envData.types[envKey]
+                    )
                     if (typeof value != "boolean") {
                         value = flag.default
+                        value = parseValue(
+                            value,
+                            envData.types[envKey]
+                        )
                         if (typeof value != "boolean") {
                             value = undefined
                         } else {
@@ -124,9 +118,7 @@ export function cmdyFlag<F extends ValueFlag | BoolFlag>(
                     )
                 }
             }
-            if (
-                Array.isArray(envData.env[envKey])
-            ) {
+            if (Array.isArray(envData.env[envKey])) {
                 if (Array.isArray(value)) {
                     envData.env[envKey] = [
                         ...envData.env[envKey],
