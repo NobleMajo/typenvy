@@ -42,8 +42,6 @@ export interface ValueFlag extends Flag {
     types: FlagValueTypes[]
 }
 
-export const stringBooleanValues = ["true", "false"]
-
 export function cmdyFlag<F extends ValueFlag | BoolFlag>(
     flag: F,
     envKey: string,
