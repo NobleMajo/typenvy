@@ -1,4 +1,4 @@
-# typenvy
+# typenvy (deprecated)
 
 ![CI/CD](https://github.com/majo418/typenvy/workflows/Publish/badge.svg)
 ![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
